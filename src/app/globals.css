@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+:root {
+  --background: 42 31% 97%;
+  --foreground: 214 42% 14%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 214 42% 14%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 214 42% 14%;
+
+  --primary: 201 76% 37%;
+  --primary-foreground: 42 35% 98%;
+
+  --secondary: 38 43% 92%;
+  --secondary-foreground: 214 37% 18%;
+
+  --muted: 40 24% 93%;
+  --muted-foreground: 214 17% 41%;
+
+  --accent: 196 46% 92%;
+  --accent-foreground: 214 37% 18%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 33 23% 84%;
+  --input: 33 23% 84%;
+  --ring: 201 76% 37%;
+
+  --radius: 18px;
+}
+
+.dark {
+  --background: 214 46% 8%;
+  --foreground: 42 35% 96%;
+
+  --card: 214 37% 10%;
+  --card-foreground: 42 35% 96%;
+
+  --popover: 214 37% 10%;
+  --popover-foreground: 42 35% 96%;
+
+  --primary: 193 72% 64%;
+  --primary-foreground: 214 46% 8%;
+
+  --secondary: 214 21% 19%;
+  --secondary-foreground: 42 35% 96%;
+
+  --muted: 214 21% 16%;
+  --muted-foreground: 36 13% 72%;
+
+  --accent: 201 30% 17%;
+  --accent-foreground: 42 35% 96%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214 16% 22%;
+  --input: 214 16% 22%;
+  --ring: 193 72% 64%;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-plus-jakarta-sans), Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(circle at top left, hsl(var(--accent) / 0.7), transparent 32%),
+    radial-gradient(circle at top right, hsl(var(--secondary) / 0.85), transparent 28%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  border-color: hsl(var(--border));
+  scroll-behavior: smooth;
+}
+
+/* Convenience token aliases used by shadcn/ui classnames */
+:root {
+  --ring-offset-background: var(--background);
+  --ring-color: var(--ring);
+  --muted-foreground-color: var(--muted-foreground);
+  --card-color: var(--card);
+  --card-foreground-color: var(--card-foreground);
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.18);
+}
+
+h1,
+h2,
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  letter-spacing: -0.035em;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.02em;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-jetbrains-mono), monospace;
+}

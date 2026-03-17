@@ -1,0 +1,494 @@
+openapi: 3.1.0
+info:
+  title: Personalized Email Reply Generator API
+  version: 1.0.0
+  description: |
+    API specification for the Personalized Email Reply Generator.
+    Auth is cookie/JWT based; endpoints marked as requiring auth expect a valid session.
+
+servers:
+  - url: https://{domain}
+    variables:
+      domain:
+        default: example.com
+
+tags:
+  - name: generation
+  - name: user
+  - name: billing
+
+paths:
+  /api/generate:
+    post:
+      tags: [generation]
+      summary: Generate an AI email reply
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Reply generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/QuotaExceeded'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/regenerate:
+    post:
+      tags: [generation]
+      summary: Regenerate an existing reply (creates a new generation linked to the parent)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegenerateRequest'
+      responses:
+        '200':
+          description: Reply regenerated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/QuotaExceeded'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/generations:
+    get:
+      tags: [generation]
+      summary: List generations for current user
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: Opaque pagination cursor
+        - in: query
+          name: savedOnly
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationsListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/generations/{id}:
+    get:
+      tags: [generation]
+      summary: Get one generation by id
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Generation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerationDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/generations/{id}/save:
+    post:
+      tags: [generation]
+      summary: Save/unsave a generation
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveGenerationRequest'
+      responses:
+        '200':
+          description: Save updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveGenerationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/user:
+    get:
+      tags: [user]
+      summary: Get current user profile
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [user]
+      summary: Update current user profile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/webhooks/stripe:
+    post:
+      tags: [billing]
+      summary: Stripe webhook receiver
+      description: Verifies Stripe signature and updates subscription records.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Invalid signature or payload
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    QuotaExceeded:
+      description: Daily quota exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ServiceUnavailable:
+      description: LLM provider unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+
+  schemas:
+    SuccessEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+      required: [success, data]
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required: [code, message]
+      required: [success, error]
+
+    Tone:
+      type: string
+      enum: [professional, friendly, formal, casual, persuasive, short_reply]
+
+    Length:
+      type: string
+      enum: [short, medium, detailed]
+
+    GenerateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+          description: Raw email text pasted by user
+        tone:
+          $ref: '#/components/schemas/Tone'
+        length:
+          $ref: '#/components/schemas/Length'
+        idempotency_key:
+          type: string
+          description: Client-generated UUID to prevent duplicate charges
+      required: [email, tone, length]
+
+    GenerateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            reply:
+              type: string
+            model:
+              type: string
+            tokens:
+              type: integer
+              nullable: true
+            latency_ms:
+              type: integer
+              nullable: true
+            prompt:
+              type: string
+              description: Included for debugging; may be omitted in production responses
+          required: [id, reply, model]
+      required: [success, data]
+
+    RegenerateRequest:
+      type: object
+      properties:
+        generationId:
+          type: string
+        tone:
+          $ref: '#/components/schemas/Tone'
+        length:
+          $ref: '#/components/schemas/Length'
+      required: [generationId]
+
+    GenerationListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        created_at:
+          type: string
+        tone:
+          $ref: '#/components/schemas/Tone'
+        length:
+          $ref: '#/components/schemas/Length'
+        is_saved:
+          type: boolean
+        snippet:
+          type: string
+      required: [id, created_at, tone, length, is_saved]
+
+    GenerationsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/GenerationListItem'
+            next_cursor:
+              type: string
+              nullable: true
+          required: [items]
+      required: [success, data]
+
+    GenerationDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            created_at:
+              type: string
+            email_input:
+              type: string
+            tone:
+              $ref: '#/components/schemas/Tone'
+            length:
+              $ref: '#/components/schemas/Length'
+            ai_reply:
+              type: string
+            ai_model:
+              type: string
+              nullable: true
+            tokens_used:
+              type: integer
+              nullable: true
+            latency_ms:
+              type: integer
+              nullable: true
+            is_saved:
+              type: boolean
+          required: [id, created_at, email_input, tone, length, ai_reply, is_saved]
+      required: [success, data]
+
+    SaveGenerationRequest:
+      type: object
+      properties:
+        is_saved:
+          type: boolean
+        title:
+          type: string
+          description: Optional future field
+        tags:
+          type: array
+          items:
+            type: string
+
+    SaveGenerationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            is_saved:
+              type: boolean
+          required: [id, is_saved]
+      required: [success, data]
+
+    UserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+            name:
+              type: string
+              nullable: true
+            job_title:
+              type: string
+              nullable: true
+            company:
+              type: string
+              nullable: true
+            signature:
+              type: string
+              nullable: true
+            default_tone:
+              $ref: '#/components/schemas/Tone'
+            plan:
+              type: string
+          required: [id, email, plan]
+      required: [success, data]
+
+    UpdateUserProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        job_title:
+          type: string
+        company:
+          type: string
+        signature:
+          type: string
+        default_tone:
+          $ref: '#/components/schemas/Tone'

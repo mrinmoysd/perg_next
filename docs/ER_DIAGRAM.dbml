@@ -1,0 +1,65 @@
+// DBML for dbdiagram.io (ER diagram)
+
+Table users {
+  id uuid [pk]
+  email text [unique, not null]
+  name text
+  job_title text
+  company text
+  signature text
+  default_tone text
+  plan text [not null, default: 'free']
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table generations {
+  id uuid [pk]
+  user_id uuid [not null]
+  parent_id uuid
+  email_input text [not null]
+  tone text [not null]
+  length text [not null]
+  ai_model text
+  prompt text
+  ai_reply text
+  tokens_used int
+  latency_ms int
+  status text [not null, default: 'created']
+  is_saved boolean [not null, default: false]
+  created_at timestamptz
+}
+
+Table subscriptions {
+  id uuid [pk]
+  user_id uuid [not null]
+  plan text [not null]
+  status text [not null]
+  stripe_customer_id text
+  stripe_subscription_id text
+  current_period_end timestamptz
+  created_at timestamptz
+}
+
+Table usage_counters {
+  id uuid [pk]
+  user_id uuid [not null]
+  day date [not null]
+  successful_generations int [not null, default: 0]
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table audit_events {
+  id uuid [pk]
+  user_id uuid
+  event_type text [not null]
+  payload jsonb
+  created_at timestamptz
+}
+
+Ref: generations.user_id > users.id
+Ref: generations.parent_id > generations.id
+Ref: subscriptions.user_id > users.id
+Ref: usage_counters.user_id > users.id
+Ref: audit_events.user_id > users.id
