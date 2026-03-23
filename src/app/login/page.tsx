@@ -17,6 +17,8 @@ import { capture } from "@/lib/analytics/posthog";
 
 export default function LoginPage() {
 	const router = useRouter();
+	const appUrl =
+		(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/+$/, "") || "";
 	const [email, setEmail] = useState("");
 	const [sent, setSent] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -62,7 +64,8 @@ export default function LoginPage() {
 		setIsSending(true);
 		try {
 			const supabase = createSupabaseBrowserClient();
-			const redirectTo = `${window.location.origin}/login`;
+			const baseUrl = appUrl || window.location.origin;
+			const redirectTo = `${baseUrl}/login`;
 			const { error: err } = await supabase.auth.signInWithOtp({
 				email: email.trim(),
 				options: { emailRedirectTo: redirectTo },
@@ -85,7 +88,8 @@ export default function LoginPage() {
 		try {
 			const supabase = createSupabaseBrowserClient();
 			const next = new URLSearchParams(window.location.search).get("next") ?? "/dashboard";
-			const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+			const baseUrl = appUrl || window.location.origin;
+			const redirectTo = `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`;
 			const { error: err } = await supabase.auth.signInWithOAuth({
 				provider: "google",
 				options: { redirectTo },
